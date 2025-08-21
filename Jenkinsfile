@@ -2,15 +2,13 @@ pipeline {
     agent any
 
     tools {
-        maven 'maven'              // Jenkins -> Global Tool Config -> Maven name
-        jdk 'java8'                // Jenkins -> Global Tool Config -> JDK name
+        maven 'maven'          // Jenkins -> Global Tool Config -> Maven
+        jdk 'java17'           // Jenkins -> Global Tool Config -> JDK 17
     }
 
     environment {
-        SONARQUBE = credentials('sonarqube-token')  // SonarQube token
         NEXUS = credentials('nexus-credentials')    // Nexus credentials
         TOMCAT = credentials('tomcat')             // Tomcat credentials
-        SONAR_SCANNER_HOME = tool 'sonarscanner'   // Jenkins tool name for SonarScanner
     }
 
     stages {
@@ -18,22 +16,6 @@ pipeline {
             steps {
                 git branch: 'master',
                     url: 'https://github.com/alsamdevops/srping3.git'
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-	    withEnv(["JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64", "PATH+JAVA=$JAVA_HOME/bin"]) {
-                withSonarQubeEnv('sonarqube') { // Jenkins System Config -> SonarQube server name
-                    sh """
-                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=spring3 \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://192.168.137.8:9000 \
-                        -Dsonar.login=$SONARQUBE
-                    """
-		    }
-                }
             }
         }
 
@@ -71,5 +53,4 @@ pipeline {
         }
     }
 }
-
 
