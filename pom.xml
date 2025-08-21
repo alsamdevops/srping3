@@ -8,9 +8,12 @@
 	<name>spring3 mvc maven</name>
 
 	<properties>
-		<jdk.version>1.6</jdk.version>
-		<spring.version>3.2.13.RELEASE</spring.version>
-		<jstl.version>1.2</jstl.version>
+		<jdk.version>17</jdk.version>
+                <spring.version>3.2.13.RELEASE</spring.version>
+                <jstl.version>1.2</jstl.version>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+                <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		
 	</properties>
 
