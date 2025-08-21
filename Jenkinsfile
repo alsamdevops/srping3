@@ -23,6 +23,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
+	    withEnv(["JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64", "PATH+JAVA=$JAVA_HOME/bin"]) {
                 withSonarQubeEnv('sonarqube') { // Jenkins System Config -> SonarQube server name
                     sh """
                         ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
@@ -31,6 +32,7 @@ pipeline {
                         -Dsonar.host.url=http://192.168.137.9:9000 \
                         -Dsonar.login=$SONARQUBE
                     """
+		    }
                 }
             }
         }
