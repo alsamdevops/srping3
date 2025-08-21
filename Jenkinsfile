@@ -1,8 +1,8 @@
-pipeline {
+pipeline 
     agent any 
     tools {
         // Note: this should match with the tool name configured in your jenkins instance (JENKINS_URL/configureTools/)
-        maven "MVN_HOME"
+        maven "maven"
         
     }
 	 environment {
@@ -11,18 +11,18 @@ pipeline {
         // This can be http or https
         NEXUS_PROTOCOL = "http"
         // Where your Nexus is running
-        NEXUS_URL = "3.133.145.136:8081"
+        NEXUS_URL = "192.168.137.9:8081"
         // Repository where we will upload the artifact
         NEXUS_REPOSITORY = "devops"
         // Jenkins credential id to authenticate to Nexus OSS
-        NEXUS_CREDENTIAL_ID = "Nexus_server"
+        NEXUS_CREDENTIAL_ID = "nexus-credentials"
     }
     stages {
         stage("clone code") {
             steps {
                 script {
                     // Let's clone the source
-                    git 'https://github.com/betawins/spring3-mvc-maven-xml-hello-world-1.git';
+                    git 'https://github.com/alsamdevops/srping3.git';
                 }
             }
         }
