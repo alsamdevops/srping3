@@ -29,7 +29,7 @@ pipeline {
                         ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=spring3 \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=http://192.168.137.9:9000 \
+                        -Dsonar.host.url=http://192.168.137.8:9000 \
                         -Dsonar.login=$SONARQUBE
                     """
 		    }
