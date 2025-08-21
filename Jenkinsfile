@@ -16,7 +16,7 @@ pipeline {
     stages {
         stage('Git Clone') {
             steps {
-                git branch: 'main',
+                git branch: 'master',
                     url: 'https://github.com/alsamdevops/srping3.git'
             }
         }
