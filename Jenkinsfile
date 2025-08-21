@@ -1,82 +1,72 @@
 pipeline {
     agent any
+
     tools {
-        // Note: this should match with the tool name configured in your jenkins instance (JENKINS_URL/configureTools/)
-        maven "maven"
+        maven 'mavin'              // Jenkins -> Global Tool Config -> Maven name
+        jdk 'java8'                // Jenkins -> Global Tool Config -> JDK name
     }
+
     environment {
-        // This can be nexus3 or nexus2
-        NEXUS_VERSION = "nexus3"
-        // This can be http or https
-        NEXUS_PROTOCOL = "http"
-        // Where your Nexus is running
-        NEXUS_URL = "192.168.137.9:8081"
-        // Repository where we will upload the artifact
-        NEXUS_REPOSITORY = "spring"
-        // Jenkins credential id to authenticate to Nexus OSS
-        NEXUS_CREDENTIAL_ID = "nexus-credentials"
+        SONARQUBE = credentials('sonarqube-token')  // SonarQube token
+        NEXUS = credentials('nexus-credentials')    // Nexus credentials
+        TOMCAT = credentials('tomcat')             // Tomcat credentials
+        SONAR_SCANNER_HOME = tool 'sonarscanner'   // Jenkins tool name for SonarScanner
     }
+
     stages {
-        stage("clone code") {
+        stage('Git Clone') {
             steps {
-                script {
-                    // Let's clone the source
-                    git 'https://github.com/alsamdevops/srping3.git'
+                git branch: 'main',
+                    url: 'https://github.com/alsamdevops/srping3.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') { // Jenkins System Config -> SonarQube server name
+                    sh """
+                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=spring3 \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://192.168.137.9:9000 \
+                        -Dsonar.login=$SONARQUBE
+                    """
                 }
             }
         }
-        stage("mvn build") {
+
+        stage('Maven Build') {
             steps {
-                script {
-                    // If you are using Windows then you should use "bat" step
-                    // Since unit testing is out of the scope we skip them
-                    sh 'mvn -Dmaven.test.failure.ignore=true install'
-                }
+                sh 'mvn clean package -DskipTests=true'
             }
         }
-        stage("publish to nexus") {
+
+        stage('Upload to Nexus') {
             steps {
-                script {
-                    // Read POM xml file using 'readMavenPom' step , this step 'readMavenPom' is included in: https://plugins.jenkins.io/pipeline-utility-steps
-                    pom = readMavenPom file: "pom.xml"
-                    // Find built artifact under target folder
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    // Print some info from the artifact found
-                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
-                    // Extract the path from the File found
-                    artifactPath = filesByGlob[0].path
-                    // Assign to a boolean response verifying If the artifact name exists
-                    artifactExists = fileExists artifactPath
-                    if (artifactExists) {
-                        echo "*** File: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version ${BUILD_NUMBER}"
-                        nexusArtifactUploader(
-                            nexusVersion: NEXUS_VERSION,
-                            protocol: NEXUS_PROTOCOL,
-                            nexusUrl: NEXUS_URL,
-                            groupId: pom.groupId,
-                            version: "${BUILD_NUMBER}",
-                            repository: NEXUS_REPOSITORY,
-                            credentialsId: NEXUS_CREDENTIAL_ID,
-                            artifacts: [
-                                // Artifact generated such as .jar, .ear and .war files.
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: artifactPath,
-                                type: pom.packaging],
-                                // Lets upload the pom.xml file for additional information for Transitive dependencies
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: "pom.xml",
-                                type: "pom"]
-                            ]
-                        )
-                    } else {
-                        error "*** File: ${artifactPath}, could not be found"
-                    }
-                }
+                sh """
+                    mvn deploy:deploy-file \
+                      -DgroupId=com.spring3.app \
+                      -DartifactId=spring3-app \
+                      -Dversion=1.0.0 \
+                      -Dpackaging=war \
+                      -Dfile=target/*.war \
+                      -DrepositoryId=nexus \
+                      -Durl=http://192.168.137.9:8081/repository/spring/ \
+                      -DgeneratePom=true \
+                      -DauthToken=$NEXUS
+                """
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sh """
+                    curl -u $TOMCAT \
+                      --upload-file target/*.war \
+                      "http://192.168.137.10:8080/manager/text/deploy?path=/spring3&update=true"
+                """
             }
         }
     }
 }
-
 
